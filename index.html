@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="he" dir="rtl" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ההכרזה האבודה</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&amp;family=Secular+One&amp;display=swap" rel="stylesheet">
+  <style>
+    /* -- BASE RESET & LAYOUT -- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: 'Frank Ruhl Libre', serif; overflow: hidden; }
+
+    .app-root {
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #0a0e1a;
+      color: #e8dcc8;
+      position: relative;
+    }
+
+    /* -- ATMOSPHERIC BACKGROUND -- */
+    .app-root::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(0,56,117,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(193,154,72,0.15) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, transparent, transparent 98px, rgba(193,154,72,0.03) 98px, rgba(193,154,72,0.03) 100px),
+        repeating-linear-gradient(90deg, transparent, transparent 98px, rgba(193,154,72,0.03) 98px, rgba(193,154,72,0.03) 100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* -- PAPER TEXTURE OVERLAY -- */
+    .app-root::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .content-layer { position: relative; z-index: 1; min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+
+    /* -- TYPOGRAPHY -- */
+    .title-font { font-family: 'Secular One', sans-serif; }
+    .body-font { font-family: 'Frank Ruhl Libre', serif; }
+
+    /* -- COLOR SYSTEM -- */
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --text: #e8dcc8;
+      --primary: #003875;
+      --accent: #c19a48;
+    }
+
+    /* -- STAR OF DAVID SVG DECORATION -- */
+    .star-decoration {
+      width: 48px; height: 48px; opacity: 0.6;
+    }
+    .star-decoration path { fill: none; stroke: var(--primary); stroke-width: 1.5; }
+
+    /* -- TIMER -- */
+    .timer-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 100;
+      background: rgba(255,255,255,0.05);
+    }
+    .timer-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), #e8b84a);
+      transition: width 1s linear;
+    }
+    .timer-fill.danger { background: linear-gradient(90deg, #a83232, #e04040); }
+
+    .timer-display {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 101; font-family: 'Secular One', sans-serif;
+      font-size: 14px; letter-spacing: 3px;
+      padding: 6px 20px; border-radius: 20px;
+      background: rgba(10,14,26,0.85); border: 1px solid rgba(193,154,72,0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    /* -- CARDS & PANELS -- */
+    .game-card {
+      background: var(--surface);
+      border: 1px solid rgba(193,154,72,0.15);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 620px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    /* -- BUTTONS -- */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--primary), #004a99);
+      color: #fff; border: 1px solid rgba(193,154,72,0.3);
+      padding: 14px 36px; border-radius: 8px; font-size: 18px;
+      font-family: 'Secular One', sans-serif; cursor: pointer;
+      transition: all 0.25s ease; letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #004a99, #005cc0); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,56,117,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .btn-secondary {
+      background: transparent; color: var(--accent); border: 1px solid rgba(193,154,72,0.3);
+      padding: 10px 24px; border-radius: 8px; font-size: 15px;
+      font-family: 'Frank Ruhl Libre', serif; cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .btn-secondary:hover { background: rgba(193,154,72,0.1); border-color: var(--accent); }
+    .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* -- INPUT FIELDS -- */
+    .game-input {
+      width: 100%; padding: 14px 18px; font-size: 18px;
+      font-family: 'Frank Ruhl Libre', serif;
+      background: rgba(0,0,0,0.3); color: var(--text);
+      border: 1px solid rgba(193,154,72,0.2); border-radius: 8px;
+      transition: border-color 0.25s ease;
+      direction: rtl;
+    }
+    .game-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(193,154,72,0.1); }
+    .game-input::placeholder { color: rgba(232,220,200,0.3); }
+
+    /* -- MORSE CODE TABLE -- */
+    .morse-table {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 4px; font-size: 13px; direction: ltr; text-align: center;
+      background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;
+    }
+    .morse-cell {
+      padding: 4px; border-radius: 4px; background: rgba(193,154,72,0.05);
+      border: 1px solid rgba(193,154,72,0.08);
+    }
+    .morse-letter { font-weight: 700; color: var(--accent); }
+    .morse-code { font-size: 11px; opacity: 0.7; letter-spacing: 1px; }
+
+    /* -- CODE SNIPPET BLOCK -- */
+    .code-block {
+      background: #0d1117; border: 1px solid rgba(193,154,72,0.1);
+      border-radius: 8px; padding: 20px; font-family: monospace;
+      font-size: 15px; direction: ltr; text-align: left;
+      line-height: 1.8; overflow-x: auto;
+    }
+    .code-keyword { color: #ff7b72; }
+    .code-string { color: #a5d6ff; }
+    .code-bracket { color: #c19a48; }
+    .code-comment { color: #6e7681; font-style: italic; }
+
+    /* -- FEEDBACK MESSAGES -- */
+    .feedback {
+      padding: 12px 18px; border-radius: 8px; font-size: 15px;
+      margin-top: 16px; text-align: center;
+      animation: fadeSlideIn 0.3s ease;
+    }
+    .feedback.success { background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.3); color: #5ce089; }
+    .feedback.error { background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.3); color: #f07080; }
+    .feedback.hint { background: rgba(193,154,72,0.1); border: 1px solid rgba(193,154,72,0.2); color: var(--accent); }
+
+    /* -- PROGRESS DOTS -- */
+    .progress-track { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
+    .progress-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(193,154,72,0.15); border: 1px solid rgba(193,154,72,0.3);
+      transition: all 0.4s ease;
+    }
+    .progress-dot.completed { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(193,154,72,0.4); }
+    .progress-dot.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(193,154,72,0.3); animation: pulse 2s infinite; }
+
+    /* -- HINT TOGGLE -- */
+    .hint-area { margin-top: 16px; }
+    .hint-content {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    .hint-content.open { max-height: 500px; opacity: 1; }
+
+    /* -- ANIMATIONS -- */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(193,154,72,0.2); }
+      50% { box-shadow: 0 0 16px rgba(193,154,72,0.5); }
+    }
+    @keyframes unlockSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes celebrateIn {
+      0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+      60% { transform: scale(1.02) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .celebrate-in { animation: celebrateIn 0.8s ease forwards; }
+
+    /* -- SAFE DOOR VISUAL -- */
+    .safe-container {
+      width: 120px; height: 120px; margin: 0 auto 24px;
+      position: relative;
+    }
+    .safe-door {
+      width: 100%; height: 100%;
+      border: 3px solid var(--accent); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1a2040, #0d1225);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 0 30px rgba(193,154,72,0.1);
+      transition: all 0.6s ease;
+    }
+    .safe-door.unlocked {
+      border-color: #5ce089; box-shadow: 0 0 40px rgba(92,224,137,0.3);
+    }
+    .safe-dial {
+      width: 50px; height: 50px; border: 2px solid rgba(193,154,72,0.5);
+      border-radius: 50%; position: relative;
+    }
+    .safe-dial::after {
+      content: ''; position: absolute; top: 4px; left: 50%; width: 2px; height: 40%;
+      background: var(--accent); transform: translateX(-50%);
+      transform-origin: bottom center;
+    }
+    .safe-door.unlocked .safe-dial { animation: unlockSpin 0.6s ease; border-color: #5ce089; }
+    .safe-door.unlocked .safe-dial::after { background: #5ce089; }
+
+    /* -- LOCK INDICATORS -- */
+    .locks { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+    .lock-icon {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(193,154,72,0.2); border-radius: 6px;
+      font-size: 18px; transition: all 0.4s ease;
+      background: rgba(0,0,0,0.2);
+    }
+    .lock-icon.unlocked { border-color: #5ce089; background: rgba(92,224,137,0.1); }
+
+    /* -- RESPONSIVE -- */
+    @media (max-width: 640px) {
+      .game-card { padding: 24px 18px; }
+      .morse-table { grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); font-size: 11px; }
+      .code-block { font-size: 13px; padding: 14px; }
+    }
+
+    /* Scrollbar styling */
+    .app-root::-webkit-scrollbar { width: 6px; }
+    .app-root::-webkit-scrollbar-track { background: transparent; }
+    .app-root::-webkit-scrollbar-thumb { background: rgba(193,154,72,0.2); border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div class="app-root" id="appRoot"><!-- Timer bar (hidden until game starts) -->
+   <div class="timer-bar" id="timerBar" style="display:none;">
+    <div class="timer-fill" id="timerFill" style="width:100%"></div>
+   </div>
+   <div class="timer-display" id="timerDisplay" style="display:none;">
+    15:00
+   </div>
+   <div class="content-layer" id="contentLayer"><!-- ======================== START SCREEN ======================== -->
+    <div id="screenStart" class="game-card" style="text-align:center;">
+     <div style="margin-bottom:20px;">
+      <svg class="star-decoration" viewbox="0 0 100 100" style="margin:0 auto;"><path d="M50 10 L61 40 L93 40 L67 58 L76 90 L50 72 L24 90 L33 58 L7 40 L39 40 Z" stroke-linejoin="round" />
+      </svg>
+     </div>
+     <h1 class="title-font" id="gameTitle" style="font-size:32px; color:var(--accent); margin-bottom:8px;">ההכרזה האבודה</h1>
+     <p style="color:rgba(232,220,200,0.5); font-size:14px; letter-spacing:2px; margin-bottom:28px;" class="title-font">חדר בריחה דיגיטלי</p>
+     <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:24px; margin-bottom:28px; text-align:right; line-height:2;">
+      <p style="font-size:17px;">שנת <strong style="color:var(--accent);">1948</strong>. אתה ארכיונאי בכיר במוזיאון הלאומי. שעות ספורות לפני טקס ההכרזה על עצמאות מדינת ישראל, נעלמה הכרזת העצמאות המקורית.</p>
+      <p style="font-size:17px; margin-top:12px;">עליך לפתור <strong style="color:var(--accent);">שלושה חידות</strong> כדי לפתוח את הכספת ולמצוא את המסמך — לפני שייגמר הזמן.</p>
+      <p style="font-size:15px; margin-top:16px; color:rgba(232,220,200,0.5);">⏱ יש לך 15 דקות בלבד.</p>
+     </div><button class="btn-primary" id="btnStart" onclick="startGame()" style="font-size:20px; padding:16px 48px;"> 🔓 התחל משימה </button>
+    </div><!-- ======================== PUZZLE 1: MORSE CODE ======================== -->
+    <div id="screenPuzzle1" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress1">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 1: צופן מורס</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">פענח את ההודעה המוסתרת</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">בחדר הארכיון נמצא פתק ישן עם סדרת נקודות וקווים — <strong style="color:var(--accent);">צופן מורס בעברית</strong>. פענח את המשפט והקלד אותו כדי לפתוח את המנעול הראשון.</p>
+     </div><!-- The encoded phrase: אם תרצו אין זו אגדה -->
+     <div style="background:rgba(193,154,72,0.08); border:1px solid rgba(193,154,72,0.15); border-radius:8px; padding:16px; margin-bottom:20px; direction:ltr; text-align:center; font-family:monospace; font-size:15px; line-height:2.2; letter-spacing:2px; word-break:break-all;"><span style="color:var(--accent);">.- --</span> &nbsp;/&nbsp; <span style="color:var(--accent);">- .-. -.-. ..-</span> &nbsp;/&nbsp; <span style="color:var(--accent);">.- .. -.</span> &nbsp;/&nbsp; <span style="color:var(--accent);">--.. ..-</span> &nbsp;/&nbsp; <span style="color:var(--accent);">.- --. -.. ..</span>
+     </div><!-- Hint toggle for Morse table -->
+     <div class="hint-area"><button class="btn-secondary" onclick="toggleHint('hint1')">💡 הצג טבלת מורס עברית</button>
+      <div class="hint-content" id="hint1" style="margin-top:12px;">
+       <div class="morse-table" id="morseTable"></div>
+      </div>
+     </div>
+     <div style="margin-top:24px;"><label for="input1" style="display:block; margin-bottom:8px; font-size:14px; opacity:0.6;">הקלד את המשפט בעברית:</label> <input type="text" id="input1" class="game-input" placeholder="...הקלד כאן" autocomplete="off">
+      <div id="feedback1"></div>
+     </div>
+     <div style="margin-top:20px; text-align:center;"><button class="btn-primary" onclick="checkPuzzle1()">בדוק תשובה</button>
+     </div>
+    </div><!-- ======================== PUZZLE 2: BINARY DATE ======================== -->
+    <div id="screenPuzzle2" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress2">
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 2: התאריך הבינארי</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">המר את הקוד הבינארי למספר עשרוני</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">על דלת הכספת חרוט מספר בינארי. זהו <strong style="color:var(--accent);">היום בחודש</strong> שבו הוכרזה מדינת ישראל (ה' באייר תש"ח = 14 במאי 1948). המר את הקוד הבינארי למספר עשרוני.</p>
+     </div><!-- Binary: 1110 = 14 -->
+     <div style="text-align:center; margin-bottom:20px;">
+      <div style="display:inline-block; background:rgba(0,0,0,0.3); border:1px solid rgba(193,154,72,0.2); border-radius:12px; padding:24px 48px;">
+       <div style="font-family:monospace; font-size:48px; letter-spacing:12px; color:var(--accent); direction:ltr;">
+        1110
+       </div>
+       <div style="font-size:13px; opacity:0.4; margin-top:8px;">
+        קוד בינארי
+       </div>
+      </div>
+     </div><!-- Hint: binary conversion guide -->
+     <div class="hint-area"><button class="btn-secondary" onclick="toggleHint('hint2')">💡 הצג מדריך המרה בינארית</button>
+      <div class="hint-content" id="hint2" style="margin-top:12px;">
+       <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:16px; direction:ltr; text-align:left; font-size:14px; line-height:2;">
+        <p style="color:var(--accent); font-weight:700; margin-bottom:8px;">Binary → Decimal:</p>
+        <p>Each digit = a power of 2 from right to left:</p>
+        <p style="font-family:monospace;">Position: 3 2 1 0</p>
+        <p style="font-family:monospace;">Power: 2³ 2² 2¹ 2⁰</p>
+        <p style="font-family:monospace;">Value: 8 4 2 1</p><br>
+        <p>Multiply each bit by its value and sum:</p>
+        <p style="font-family:monospace; color:var(--accent);">1110 → (1×8)+(1×4)+(1×2)+(0×1) = ?</p>
+       </div>
+      </div>
+     </div>
+     <div style="margin-top:24px;"><label for="input2" style="display:block; margin-bottom:8px; font-size:14px; opacity:0.6;">הקלד את המספר העשרוני:</label> <input type="number" id="input2" class="game-input" placeholder="...הקלד מספר" autocomplete="off" style="direction:ltr; text-align:center;">
+      <div id="feedback2"></div>
+     </div>
+     <div style="margin-top:20px; text-align:center;"><button class="btn-primary" onclick="checkPuzzle2()">בדוק תשובה</button>
+     </div>
+    </div><!-- ======================== PUZZLE 3: FLAG ARRAY ======================== -->
+    <div id="screenPuzzle3" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress3">
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot active"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 3: חידת הדגל</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">מצא את צבעי הדגל במערך הקוד</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">על המנעול האחרון מוצמד <strong style="color:var(--accent);">קטע קוד JavaScript</strong>. עליך לזהות את <strong style="color:var(--accent);">האינדקסים</strong> (מ-0) של צבעי דגל ישראל (כחול ולבן) במערך.</p>
+     </div>
+     <div class="code-block"><span class="code-comment">// What are the flag colors?</span><br><span class="code-keyword">let</span> flagColors = <span class="code-bracket">[</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Red"</span>,&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 0</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Blue"</span>,&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 1</span><br>
+       &nbsp;&nbsp;<span class="code-string">"White"</span>,&nbsp;&nbsp;<span class="code-comment">// index 2</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Green"</span>&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 3</span><br><span class="code-bracket">]</span>;
+     </div>
+     <div class="hint-area" style="margin-top:16px;"><button class="btn-secondary" onclick="toggleHint('hint3')">💡 רמז</button>
+      <div class="hint-content" id="hint3" style="margin-top:12px;">
+       <div class="feedback hint">
+        דגל ישראל מורכב משני צבעים: <strong>כחול (Blue)</strong> ו<strong>לבן (White)</strong>. מערכים ב-JavaSc<!doctype html>
+<html lang="he" dir="rtl" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ההכרזה האבודה</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&amp;family=Secular+One&amp;display=swap" rel="stylesheet">
+  <style>
+    /* -- BASE RESET & LAYOUT -- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: 'Frank Ruhl Libre', serif; overflow: hidden; }
+
+    .app-root {
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #0a0e1a;
+      color: #e8dcc8;
+      position: relative;
+    }
+
+    /* -- ATMOSPHERIC BACKGROUND -- */
+    .app-root::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(0,56,117,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(193,154,72,0.15) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, transparent, transparent 98px, rgba(193,154,72,0.03) 98px, rgba(193,154,72,0.03) 100px),
+        repeating-linear-gradient(90deg, transparent, transparent 98px, rgba(193,154,72,0.03) 98px, rgba(193,154,72,0.03) 100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* -- PAPER TEXTURE OVERLAY -- */
+    .app-root::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .content-layer { position: relative; z-index: 1; min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+
+    /* -- TYPOGRAPHY -- */
+    .title-font { font-family: 'Secular One', sans-serif; }
+    .body-font { font-family: 'Frank Ruhl Libre', serif; }
+
+    /* -- COLOR SYSTEM -- */
+    :root {
+      --bg: #0a0e1a;
+      --surface: #141a2e;
+      --text: #e8dcc8;
+      --primary: #003875;
+      --accent: #c19a48;
+    }
+
+    /* -- STAR OF DAVID SVG DECORATION -- */
+    .star-decoration {
+      width: 48px; height: 48px; opacity: 0.6;
+    }
+    .star-decoration path { fill: none; stroke: var(--primary); stroke-width: 1.5; }
+
+    /* -- TIMER -- */
+    .timer-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 100;
+      background: rgba(255,255,255,0.05);
+    }
+    .timer-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), #e8b84a);
+      transition: width 1s linear;
+    }
+    .timer-fill.danger { background: linear-gradient(90deg, #a83232, #e04040); }
+
+    .timer-display {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 101; font-family: 'Secular One', sans-serif;
+      font-size: 14px; letter-spacing: 3px;
+      padding: 6px 20px; border-radius: 20px;
+      background: rgba(10,14,26,0.85); border: 1px solid rgba(193,154,72,0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    /* -- CARDS & PANELS -- */
+    .game-card {
+      background: var(--surface);
+      border: 1px solid rgba(193,154,72,0.15);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 620px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    /* -- BUTTONS -- */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--primary), #004a99);
+      color: #fff; border: 1px solid rgba(193,154,72,0.3);
+      padding: 14px 36px; border-radius: 8px; font-size: 18px;
+      font-family: 'Secular One', sans-serif; cursor: pointer;
+      transition: all 0.25s ease; letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #004a99, #005cc0); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,56,117,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .btn-secondary {
+      background: transparent; color: var(--accent); border: 1px solid rgba(193,154,72,0.3);
+      padding: 10px 24px; border-radius: 8px; font-size: 15px;
+      font-family: 'Frank Ruhl Libre', serif; cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .btn-secondary:hover { background: rgba(193,154,72,0.1); border-color: var(--accent); }
+    .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* -- INPUT FIELDS -- */
+    .game-input {
+      width: 100%; padding: 14px 18px; font-size: 18px;
+      font-family: 'Frank Ruhl Libre', serif;
+      background: rgba(0,0,0,0.3); color: var(--text);
+      border: 1px solid rgba(193,154,72,0.2); border-radius: 8px;
+      transition: border-color 0.25s ease;
+      direction: rtl;
+    }
+    .game-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(193,154,72,0.1); }
+    .game-input::placeholder { color: rgba(232,220,200,0.3); }
+
+    /* -- MORSE CODE TABLE -- */
+    .morse-table {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 4px; font-size: 13px; direction: ltr; text-align: center;
+      background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;
+    }
+    .morse-cell {
+      padding: 4px; border-radius: 4px; background: rgba(193,154,72,0.05);
+      border: 1px solid rgba(193,154,72,0.08);
+    }
+    .morse-letter { font-weight: 700; color: var(--accent); }
+    .morse-code { font-size: 11px; opacity: 0.7; letter-spacing: 1px; }
+
+    /* -- CODE SNIPPET BLOCK -- */
+    .code-block {
+      background: #0d1117; border: 1px solid rgba(193,154,72,0.1);
+      border-radius: 8px; padding: 20px; font-family: monospace;
+      font-size: 15px; direction: ltr; text-align: left;
+      line-height: 1.8; overflow-x: auto;
+    }
+    .code-keyword { color: #ff7b72; }
+    .code-string { color: #a5d6ff; }
+    .code-bracket { color: #c19a48; }
+    .code-comment { color: #6e7681; font-style: italic; }
+
+    /* -- FEEDBACK MESSAGES -- */
+    .feedback {
+      padding: 12px 18px; border-radius: 8px; font-size: 15px;
+      margin-top: 16px; text-align: center;
+      animation: fadeSlideIn 0.3s ease;
+    }
+    .feedback.success { background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.3); color: #5ce089; }
+    .feedback.error { background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.3); color: #f07080; }
+    .feedback.hint { background: rgba(193,154,72,0.1); border: 1px solid rgba(193,154,72,0.2); color: var(--accent); }
+
+    /* -- PROGRESS DOTS -- */
+    .progress-track { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
+    .progress-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(193,154,72,0.15); border: 1px solid rgba(193,154,72,0.3);
+      transition: all 0.4s ease;
+    }
+    .progress-dot.completed { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(193,154,72,0.4); }
+    .progress-dot.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(193,154,72,0.3); animation: pulse 2s infinite; }
+
+    /* -- HINT TOGGLE -- */
+    .hint-area { margin-top: 16px; }
+    .hint-content {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    .hint-content.open { max-height: 500px; opacity: 1; }
+
+    /* -- ANIMATIONS -- */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(193,154,72,0.2); }
+      50% { box-shadow: 0 0 16px rgba(193,154,72,0.5); }
+    }
+    @keyframes unlockSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes celebrateIn {
+      0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+      60% { transform: scale(1.02) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .celebrate-in { animation: celebrateIn 0.8s ease forwards; }
+
+    /* -- SAFE DOOR VISUAL -- */
+    .safe-container {
+      width: 120px; height: 120px; margin: 0 auto 24px;
+      position: relative;
+    }
+    .safe-door {
+      width: 100%; height: 100%;
+      border: 3px solid var(--accent); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1a2040, #0d1225);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 0 30px rgba(193,154,72,0.1);
+      transition: all 0.6s ease;
+    }
+    .safe-door.unlocked {
+      border-color: #5ce089; box-shadow: 0 0 40px rgba(92,224,137,0.3);
+    }
+    .safe-dial {
+      width: 50px; height: 50px; border: 2px solid rgba(193,154,72,0.5);
+      border-radius: 50%; position: relative;
+    }
+    .safe-dial::after {
+      content: ''; position: absolute; top: 4px; left: 50%; width: 2px; height: 40%;
+      background: var(--accent); transform: translateX(-50%);
+      transform-origin: bottom center;
+    }
+    .safe-door.unlocked .safe-dial { animation: unlockSpin 0.6s ease; border-color: #5ce089; }
+    .safe-door.unlocked .safe-dial::after { background: #5ce089; }
+
+    /* -- LOCK INDICATORS -- */
+    .locks { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+    .lock-icon {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(193,154,72,0.2); border-radius: 6px;
+      font-size: 18px; transition: all 0.4s ease;
+      background: rgba(0,0,0,0.2);
+    }
+    .lock-icon.unlocked { border-color: #5ce089; background: rgba(92,224,137,0.1); }
+
+    /* -- RESPONSIVE -- */
+    @media (max-width: 640px) {
+      .game-card { padding: 24px 18px; }
+      .morse-table { grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); font-size: 11px; }
+      .code-block { font-size: 13px; padding: 14px; }
+    }
+
+    /* Scrollbar styling */
+    .app-root::-webkit-scrollbar { width: 6px; }
+    .app-root::-webkit-scrollbar-track { background: transparent; }
+    .app-root::-webkit-scrollbar-thumb { background: rgba(193,154,72,0.2); border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div class="app-root" id="appRoot"><!-- Timer bar (hidden until game starts) -->
+   <div class="timer-bar" id="timerBar" style="display:none;">
+    <div class="timer-fill" id="timerFill" style="width:100%"></div>
+   </div>
+   <div class="timer-display" id="timerDisplay" style="display:none;">
+    15:00
+   </div>
+   <div class="content-layer" id="contentLayer"><!-- ======================== START SCREEN ======================== -->
+    <div id="screenStart" class="game-card" style="text-align:center;">
+     <div style="margin-bottom:20px;">
+      <svg class="star-decoration" viewbox="0 0 100 100" style="margin:0 auto;"><path d="M50 10 L61 40 L93 40 L67 58 L76 90 L50 72 L24 90 L33 58 L7 40 L39 40 Z" stroke-linejoin="round" />
+      </svg>
+     </div>
+     <h1 class="title-font" id="gameTitle" style="font-size:32px; color:var(--accent); margin-bottom:8px;">ההכרזה האבודה</h1>
+     <p style="color:rgba(232,220,200,0.5); font-size:14px; letter-spacing:2px; margin-bottom:28px;" class="title-font">חדר בריחה דיגיטלי</p>
+     <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:24px; margin-bottom:28px; text-align:right; line-height:2;">
+      <p style="font-size:17px;">שנת <strong style="color:var(--accent);">1948</strong>. אתה ארכיונאי בכיר במוזיאון הלאומי. שעות ספורות לפני טקס ההכרזה על עצמאות מדינת ישראל, נעלמה הכרזת העצמאות המקורית.</p>
+      <p style="font-size:17px; margin-top:12px;">עליך לפתור <strong style="color:var(--accent);">שלושה חידות</strong> כדי לפתוח את הכספת ולמצוא את המסמך — לפני שייגמר הזמן.</p>
+      <p style="font-size:15px; margin-top:16px; color:rgba(232,220,200,0.5);">⏱ יש לך 15 דקות בלבד.</p>
+     </div><button class="btn-primary" id="btnStart" onclick="startGame()" style="font-size:20px; padding:16px 48px;"> 🔓 התחל משימה </button>
+    </div><!-- ======================== PUZZLE 1: MORSE CODE ======================== -->
+    <div id="screenPuzzle1" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress1">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 1: צופן מורס</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">פענח את ההודעה המוסתרת</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">בחדר הארכיון נמצא פתק ישן עם סדרת נקודות וקווים — <strong style="color:var(--accent);">צופן מורס בעברית</strong>. פענח את המשפט והקלד אותו כדי לפתוח את המנעול הראשון.</p>
+     </div><!-- The encoded phrase: אם תרצו אין זו אגדה -->
+     <div style="background:rgba(193,154,72,0.08); border:1px solid rgba(193,154,72,0.15); border-radius:8px; padding:16px; margin-bottom:20px; direction:ltr; text-align:center; font-family:monospace; font-size:15px; line-height:2.2; letter-spacing:2px; word-break:break-all;"><span style="color:var(--accent);">.- --</span> &nbsp;/&nbsp; <span style="color:var(--accent);">- .-. -.-. ..-</span> &nbsp;/&nbsp; <span style="color:var(--accent);">.- .. -.</span> &nbsp;/&nbsp; <span style="color:var(--accent);">--.. ..-</span> &nbsp;/&nbsp; <span style="color:var(--accent);">.- --. -.. ..</span>
+     </div><!-- Hint toggle for Morse table -->
+     <div class="hint-area"><button class="btn-secondary" onclick="toggleHint('hint1')">💡 הצג טבלת מורס עברית</button>
+      <div class="hint-content" id="hint1" style="margin-top:12px;">
+       <div class="morse-table" id="morseTable"></div>
+      </div>
+     </div>
+     <div style="margin-top:24px;"><label for="input1" style="display:block; margin-bottom:8px; font-size:14px; opacity:0.6;">הקלד את המשפט בעברית:</label> <input type="text" id="input1" class="game-input" placeholder="...הקלד כאן" autocomplete="off">
+      <div id="feedback1"></div>
+     </div>
+     <div style="margin-top:20px; text-align:center;"><button class="btn-primary" onclick="checkPuzzle1()">בדוק תשובה</button>
+     </div>
+    </div><!-- ======================== PUZZLE 2: BINARY DATE ======================== -->
+    <div id="screenPuzzle2" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress2">
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 2: התאריך הבינארי</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">המר את הקוד הבינארי למספר עשרוני</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">על דלת הכספת חרוט מספר בינארי. זהו <strong style="color:var(--accent);">היום בחודש</strong> שבו הוכרזה מדינת ישראל (ה' באייר תש"ח = 14 במאי 1948). המר את הקוד הבינארי למספר עשרוני.</p>
+     </div><!-- Binary: 1110 = 14 -->
+     <div style="text-align:center; margin-bottom:20px;">
+      <div style="display:inline-block; background:rgba(0,0,0,0.3); border:1px solid rgba(193,154,72,0.2); border-radius:12px; padding:24px 48px;">
+       <div style="font-family:monospace; font-size:48px; letter-spacing:12px; color:var(--accent); direction:ltr;">
+        1110
+       </div>
+       <div style="font-size:13px; opacity:0.4; margin-top:8px;">
+        קוד בינארי
+       </div>
+      </div>
+     </div><!-- Hint: binary conversion guide -->
+     <div class="hint-area"><button class="btn-secondary" onclick="toggleHint('hint2')">💡 הצג מדריך המרה בינארית</button>
+      <div class="hint-content" id="hint2" style="margin-top:12px;">
+       <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:16px; direction:ltr; text-align:left; font-size:14px; line-height:2;">
+        <p style="color:var(--accent); font-weight:700; margin-bottom:8px;">Binary → Decimal:</p>
+        <p>Each digit = a power of 2 from right to left:</p>
+        <p style="font-family:monospace;">Position: 3 2 1 0</p>
+        <p style="font-family:monospace;">Power: 2³ 2² 2¹ 2⁰</p>
+        <p style="font-family:monospace;">Value: 8 4 2 1</p><br>
+        <p>Multiply each bit by its value and sum:</p>
+        <p style="font-family:monospace; color:var(--accent);">1110 → (1×8)+(1×4)+(1×2)+(0×1) = ?</p>
+       </div>
+      </div>
+     </div>
+     <div style="margin-top:24px;"><label for="input2" style="display:block; margin-bottom:8px; font-size:14px; opacity:0.6;">הקלד את המספר העשרוני:</label> <input type="number" id="input2" class="game-input" placeholder="...הקלד מספר" autocomplete="off" style="direction:ltr; text-align:center;">
+      <div id="feedback2"></div>
+     </div>
+     <div style="margin-top:20px; text-align:center;"><button class="btn-primary" onclick="checkPuzzle2()">בדוק תשובה</button>
+     </div>
+    </div><!-- ======================== PUZZLE 3: FLAG ARRAY ======================== -->
+    <div id="screenPuzzle3" class="game-card" style="display:none;">
+     <div class="progress-track" id="progress3">
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot completed"></div>
+      <div class="progress-dot active"></div>
+     </div>
+     <h2 class="title-font" style="color:var(--accent); font-size:22px; margin-bottom:6px;">חידה 3: חידת הדגל</h2>
+     <p style="opacity:0.6; font-size:14px; margin-bottom:20px;">מצא את צבעי הדגל במערך הקוד</p>
+     <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:20px; margin-bottom:20px; text-align:right; line-height:1.9;">
+      <p style="font-size:15px;">על המנעול האחרון מוצמד <strong style="color:var(--accent);">קטע קוד JavaScript</strong>. עליך לזהות את <strong style="color:var(--accent);">האינדקסים</strong> (מ-0) של צבעי דגל ישראל (כחול ולבן) במערך.</p>
+     </div>
+     <div class="code-block"><span class="code-comment">// What are the flag colors?</span><br><span class="code-keyword">let</span> flagColors = <span class="code-bracket">[</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Red"</span>,&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 0</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Blue"</span>,&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 1</span><br>
+       &nbsp;&nbsp;<span class="code-string">"White"</span>,&nbsp;&nbsp;<span class="code-comment">// index 2</span><br>
+       &nbsp;&nbsp;<span class="code-string">"Green"</span>&nbsp;&nbsp;&nbsp;<span class="code-comment">// index 3</span><br><span class="code-bracket">]</span>;
+     </div>
+     <div class="hint-area" style="margin-top:16px;"><button class="btn-secondary" onclick="toggleHint('hint3')">💡 רמז</button>
+      <div class="hint-content" id="hint3" style="margin-top:12px;">
+       <div class="feedback hint">
+        דגל ישראל מורכב משני צבעים: <strong>כחול (Blue)</strong> ו<strong>לבן (White)</strong>. מערכים ב-JavaSc
